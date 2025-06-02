@@ -18,11 +18,20 @@ const databaseURL = process.env.DATABASE_URL;
 const server = http.createServer(app);
 
 
+const allowedOrigins = process.env.ORIGIN.split(",");
+
 app.use(
     cors({
-        origin: process.env.ORIGIN,
+        origin: function (origin, callback) {
+            if (!origin || allowedOrigins.includes(origin)) {
+                return callback(null, true);
+            } else {
+                console.warn(`❌ Blocked CORS request from: ${origin}`);
+                return callback(new Error("Not allowed by CORS"));
+            }
+        },
         methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-        credentials: true
+        credentials: true,
     })
 );
 
@@ -40,8 +49,8 @@ app.use("/api/channel", channelRoutes);
 mongoose.connect(databaseURL, {
     dbName: "VOXAGRAM"
 })
-.then(() => console.log("DB Connection successful"))
-.catch(err => console.log(`Some error occurred while connecting to database: ${err}`));
+    .then(() => console.log("DB Connection successful"))
+    .catch(err => console.log(`Some error occurred while connecting to database: ${err}`));
 
 server.listen(port, () => {
     console.log(`Server is running on port ${port}`);

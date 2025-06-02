@@ -5,6 +5,8 @@ import { renameSync, unlinkSync } from "fs";
 
 
 const maxAge = 3 * 24 * 60 * 60 * 1000;
+const isProduction = process.env.NODE_ENV === 'production';
+
 const createToken = (email, userId) => {
     return jwt.sign({ email, userId }, process.env.JWT_KEY, { expiresIn: maxAge })
 };
@@ -18,8 +20,8 @@ export const signup = async (request, response, next) => {
         const user = await User.create({ email, password });
         response.cookie("jwt", createToken(email, user.id), {
             maxAge,
-            secure: true,
-            sameSite: "None",
+            secure: isProduction,
+            sameSite: isProduction ? "None" : "Lax",
         });
         return response.status(201).json({
             user: {
@@ -51,8 +53,8 @@ export const login = async (request, response, next) => {
         }
         response.cookie("jwt", createToken(email, user.id), {
             maxAge,
-            secure: true,
-            sameSite: "None",
+            secure: isProduction,
+            sameSite: isProduction ? "None" : "Lax",
         });
         return response.status(200).json({
             user: {
@@ -170,7 +172,11 @@ export const removeProfileImage = async (request, response, next) => {
 
 export const logout = async (request, response, next) => {
     try {
-        response.cookie("jwt", "", {maxAge: 1, secure: true, sameSite:"None"});
+        response.cookie("jwt", "", {
+            maxAge: 1,
+            secure: isProduction,
+            sameSite: isProduction ? "None" : "Lax",
+        });
 
         return response.status(200).send("Logout successfully!");
     } catch (error) {
